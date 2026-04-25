@@ -1,0 +1,35 @@
+# SecureShare Sigma template — malicious file hash
+#
+# Triggered when an endpoint sees a file whose hash matches a reported IOC.
+# `value` is expected to carry SHA-256; SHA-1 / MD5 fall back via OR-merge.
+#
+# Placeholders:
+#   {{rule_id}}, {{indicator_value}}, {{severity}}, {{credibility_tag}},
+#   {{report_id}}, {{generated_date}}
+
+title: SecureShare File-Hash Block — {{indicator_value}}
+id: {{rule_id}}
+status: experimental
+description: Auto-generated block for a malware sample reported through SecureShare.
+references:
+  - secureshare://reports/{{report_id}}
+author: SecureShare auto-generator
+date: {{generated_date}}
+logsource:
+  category: file_event
+  product: endpoint
+detection:
+  selection_sha256:
+    Hashes|contains: "SHA256={{indicator_value}}"
+  selection_sha1:
+    Hashes|contains: "SHA1={{indicator_value}}"
+  selection_md5:
+    Hashes|contains: "MD5={{indicator_value}}"
+  condition: 1 of selection_*
+falsepositives:
+  - Legitimate signed binaries that share a hash via collision (extremely rare)
+level: {{severity}}
+tags:
+  - secureshare.auto
+  - secureshare.indicator.file_hash
+  - {{credibility_tag}}

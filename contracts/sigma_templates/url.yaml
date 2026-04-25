@@ -1,0 +1,31 @@
+# SecureShare Sigma template — malicious URL pattern
+#
+# Triggered on a full URL match, typically from a phishing kit hosted at a
+# specific path on an otherwise-shared domain.
+#
+# Placeholders:
+#   {{rule_id}}, {{indicator_value}}, {{severity}}, {{credibility_tag}},
+#   {{report_id}}, {{generated_date}}
+
+title: SecureShare URL Block — {{indicator_value}}
+id: {{rule_id}}
+status: experimental
+description: Auto-generated block for a phishing or malware-hosting URL.
+references:
+  - secureshare://reports/{{report_id}}
+author: SecureShare auto-generator
+date: {{generated_date}}
+logsource:
+  category: proxy
+  product: web
+detection:
+  selection:
+    cs-uri: "{{indicator_value}}"
+  condition: selection
+falsepositives:
+  - Security researchers fetching the URL for analysis
+level: {{severity}}
+tags:
+  - secureshare.auto
+  - secureshare.indicator.url
+  - {{credibility_tag}}

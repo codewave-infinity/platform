@@ -1,0 +1,40 @@
+{
+  "request": {
+    "seedIndicator": {
+      "type": "domain",
+      "value": "esewa-verify-secure.xyz",
+      "first_seen": "2026-04-25T10:00:00Z"
+    }
+  },
+  "response": {
+    "cluster": [
+      {
+        "indicator": {
+          "type": "domain",
+          "value": "esewa-secure-login.xyz",
+          "first_seen": "2026-04-24T22:11:00Z"
+        },
+        "score": 0.94,
+        "relationship": "shares_cert_with"
+      },
+      {
+        "indicator": {
+          "type": "ipv4",
+          "value": "203.0.113.42",
+          "first_seen": "2026-04-25T10:00:00Z"
+        },
+        "score": 0.91,
+        "relationship": "resolves_to"
+      },
+      {
+        "indicator": {
+          "type": "domain",
+          "value": "khalti-otp-verify.click",
+          "first_seen": "2026-04-23T08:30:00Z"
+        },
+        "score": 0.78,
+        "relationship": "registered_via"
+      }
+    ]
+  }
+}

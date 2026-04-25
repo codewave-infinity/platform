@@ -1,0 +1,10 @@
+{
+  "rules": [
+    {
+      "id": "0d7c3f4e-5f1a-4d9b-8a02-1e7b7e9a3c11",
+      "yaml": "title: SecureShare DNS Block — esewa-verify-secure.xyz\nid: 0d7c3f4e-5f1a-4d9b-8a02-1e7b7e9a3c11\nstatus: experimental\ndescription: Auto-generated DNS block for a domain reported through SecureShare.\nlogsource:\n  product: dns\n  category: query\ndetection:\n  selection:\n    query: \"esewa-verify-secure.xyz\"\n  condition: selection\nlevel: high\ntags:\n  - secureshare.auto\n  - secureshare.indicator.domain\n  - secureshare.credibility.high\n",
+      "sourceCredibility": 0.82,
+      "expiresAt": "2026-05-25T10:00:00Z"
+    }
+  ]
+}

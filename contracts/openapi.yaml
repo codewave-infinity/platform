@@ -1,0 +1,394 @@
+openapi: 3.1.0
+info:
+  title: SecureShare Platform API
+  version: 1.0.0
+  description: |
+    Privacy-preserving threat intelligence sharing + federated learning
+    backbone for the SecureShare Smart Firewall Gateway network.
+servers:
+  - url: /api/v1
+
+tags:
+  - name: auth
+  - name: threats
+  - name: sigma
+  - name: telemetry
+  - name: gnn
+  - name: fl
+
+security:
+  - SessionToken: []
+  - GatewayToken: []
+
+paths:
+  /auth/zk-verify:
+    post:
+      tags: [auth]
+      summary: Verify a zero-knowledge proof of group membership
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ZKVerifyRequest" }
+      responses:
+        "200":
+          description: Verified — session issued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ZKVerifyResponse" }
+        "401":
+          description: Proof rejected
+
+  /threats/report:
+    post:
+      tags: [threats]
+      summary: Submit a new threat report
+      security:
+        - SessionToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ThreatReportRequest" }
+      responses:
+        "201":
+          description: Report accepted, Sigma rule generated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ThreatReportResponse" }
+
+  /threats/feed:
+    get:
+      tags: [threats]
+      summary: List recent threat reports across the network
+      security:
+        - SessionToken: []
+      parameters:
+        - in: query
+          name: since
+          schema: { type: string, format: date-time }
+        - in: query
+          name: type
+          schema: { $ref: "#/components/schemas/ThreatType" }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, maximum: 200 }
+      responses:
+        "200":
+          description: Feed page
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ThreatFeedResponse" }
+
+  /sigma/rules:
+    get:
+      tags: [sigma]
+      summary: Pull Sigma rules updated since `since`
+      security:
+        - GatewayToken: []
+      parameters:
+        - in: query
+          name: since
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Rule batch
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SigmaRulesResponse" }
+
+  /telemetry/confirm:
+    post:
+      tags: [telemetry]
+      summary: Anonymous, batched confirmation that rules fired locally
+      security:
+        - GatewayToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TelemetryConfirmRequest" }
+      responses:
+        "200":
+          description: Telemetry accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TelemetryConfirmResponse" }
+
+  /gnn/cluster:
+    post:
+      tags: [gnn]
+      summary: Expand a seed indicator into its malicious-infrastructure cluster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GnnClusterRequest" }
+      responses:
+        "200":
+          description: Cluster members
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GnnClusterResponse" }
+
+  /fl/register-client:
+    post:
+      tags: [fl]
+      summary: Register a federated-learning client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FlRegisterRequest" }
+      responses:
+        "200":
+          description: Client registered
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FlRegisterResponse" }
+
+  /fl/global-model:
+    get:
+      tags: [fl]
+      summary: Download the latest aggregated global model
+      responses:
+        "200":
+          description: Binary weight stream
+          headers:
+            X-Model-Version:
+              schema: { type: string }
+            X-Trained-At:
+              schema: { type: string, format: date-time }
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /fl/submit-update:
+    post:
+      tags: [fl]
+      summary: Submit a local model update for aggregation
+      parameters:
+        - in: header
+          name: X-Client-Id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [roundId, sampleCount, weightUpdate]
+              properties:
+                roundId: { type: integer }
+                sampleCount: { type: integer }
+                weightUpdate:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Update accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FlSubmitUpdateResponse" }
+
+components:
+  securitySchemes:
+    SessionToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: ZK-derived session token for human reporters
+    GatewayToken:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: Pre-provisioned token identifying a deployed gateway
+
+  schemas:
+    IndicatorType:
+      type: string
+      enum: [domain, ipv4, url, file_hash, ja4, email_sender]
+
+    ThreatType:
+      type: string
+      enum: [phishing, malware, ddos, c2]
+
+    Severity:
+      type: string
+      enum: [low, medium, high, critical]
+
+    Indicator:
+      type: object
+      required: [type, value, first_seen]
+      properties:
+        type: { $ref: "#/components/schemas/IndicatorType" }
+        value: { type: string, example: "esewa-verify.xyz" }
+        first_seen: { type: string, format: date-time }
+
+    ZKVerifyRequest:
+      type: object
+      required: [proof, publicSignals, nullifierHash]
+      properties:
+        proof:
+          oneOf:
+            - type: string
+            - type: object
+        publicSignals:
+          type: array
+          items: { type: string }
+        nullifierHash: { type: string }
+
+    ZKVerifyResponse:
+      type: object
+      required: [sessionToken, anonymousId, credibilityScore]
+      properties:
+        sessionToken: { type: string }
+        anonymousId: { type: string }
+        credibilityScore: { type: number, format: float, minimum: 0, maximum: 1 }
+
+    ThreatReportRequest:
+      type: object
+      required: [type, indicators, severity, description]
+      properties:
+        type: { $ref: "#/components/schemas/ThreatType" }
+        indicators:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/Indicator" }
+        severity: { $ref: "#/components/schemas/Severity" }
+        description: { type: string, maxLength: 4000 }
+        mitre_tactic:
+          type: string
+          description: MITRE ATT&CK tactic id (e.g. TA0001)
+          nullable: true
+
+    ThreatReportResponse:
+      type: object
+      required: [reportId, sigmaRuleId, anonymousReporter]
+      properties:
+        reportId: { type: string }
+        sigmaRuleId: { type: string }
+        anonymousReporter: { type: string }
+
+    ThreatReport:
+      allOf:
+        - $ref: "#/components/schemas/ThreatReportRequest"
+        - type: object
+          required: [reportId, anonymousReporter, credibility, createdAt]
+          properties:
+            reportId: { type: string }
+            anonymousReporter: { type: string }
+            credibility: { type: number, format: float, minimum: 0, maximum: 1 }
+            createdAt: { type: string, format: date-time }
+
+    Pagination:
+      type: object
+      required: [hasMore]
+      properties:
+        cursor: { type: string, nullable: true }
+        hasMore: { type: boolean }
+
+    ThreatFeedResponse:
+      type: object
+      required: [reports, pagination]
+      properties:
+        reports:
+          type: array
+          items: { $ref: "#/components/schemas/ThreatReport" }
+        pagination: { $ref: "#/components/schemas/Pagination" }
+
+    SigmaRule:
+      type: object
+      required: [id, yaml, sourceCredibility, expiresAt]
+      properties:
+        id: { type: string }
+        yaml: { type: string, description: Full Sigma rule YAML body }
+        sourceCredibility: { type: number, minimum: 0, maximum: 1 }
+        expiresAt: { type: string, format: date-time }
+
+    SigmaRulesResponse:
+      type: object
+      required: [rules]
+      properties:
+        rules:
+          type: array
+          items: { $ref: "#/components/schemas/SigmaRule" }
+
+    TelemetryConfirmRequest:
+      type: object
+      required: [ruleIds, hitCounts, aggregatedAt]
+      properties:
+        ruleIds:
+          type: array
+          items: { type: string }
+        hitCounts:
+          type: array
+          items: { type: integer, minimum: 0 }
+        aggregatedAt: { type: string, format: date-time }
+
+    TelemetryConfirmResponse:
+      type: object
+      required: [accepted, credibilityDelta]
+      properties:
+        accepted: { type: integer }
+        credibilityDelta: { type: number, format: float }
+
+    GnnClusterRequest:
+      type: object
+      required: [seedIndicator]
+      properties:
+        seedIndicator: { $ref: "#/components/schemas/Indicator" }
+
+    ClusterMember:
+      type: object
+      required: [indicator, score, relationship]
+      properties:
+        indicator: { $ref: "#/components/schemas/Indicator" }
+        score: { type: number, format: float, minimum: 0, maximum: 1 }
+        relationship:
+          type: string
+          enum:
+            [
+              resolves_to,
+              issued_by,
+              shares_cert_with,
+              registered_via,
+              same_asn,
+              embedding_neighbor,
+            ]
+
+    GnnClusterResponse:
+      type: object
+      required: [cluster]
+      properties:
+        cluster:
+          type: array
+          items: { $ref: "#/components/schemas/ClusterMember" }
+
+    FlRegisterRequest:
+      type: object
+      required: [gatewayPublicKey, capabilities]
+      properties:
+        gatewayPublicKey: { type: string, description: PEM or base64 SPKI }
+        capabilities:
+          type: array
+          items: { type: string }
+
+    FlRegisterResponse:
+      type: object
+      required: [clientId, aggregatorEndpoint, currentRound]
+      properties:
+        clientId: { type: string }
+        aggregatorEndpoint: { type: string, format: uri }
+        currentRound: { type: integer, minimum: 0 }
+
+    FlSubmitUpdateResponse:
+      type: object
+      required: [accepted, nextRoundAt]
+      properties:
+        accepted: { type: boolean }
+        nextRoundAt: { type: string, format: date-time }

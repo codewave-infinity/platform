@@ -1,0 +1,33 @@
+# SecureShare Sigma template — DNS query
+#
+# Triggered when a gateway resolves a DNS query for a known-bad domain.
+# Placeholders (substituted by the rule generator):
+#   {{rule_id}}            — unique UUID for this rule
+#   {{indicator_value}}    — the malicious domain
+#   {{severity}}           — low | medium | high | critical
+#   {{credibility_tag}}    — secureshare.credibility.{low|medium|high}
+#   {{report_id}}          — originating threat report id
+
+title: SecureShare DNS Block — {{indicator_value}}
+id: {{rule_id}}
+status: experimental
+description: Auto-generated DNS block for a domain reported through SecureShare.
+references:
+  - secureshare://reports/{{report_id}}
+author: SecureShare auto-generator
+date: {{generated_date}}
+logsource:
+  product: dns
+  category: query
+detection:
+  selection:
+    query: "{{indicator_value}}"
+  condition: selection
+falsepositives:
+  - Legitimate brand-protection lookups
+  - Security scanners
+level: {{severity}}
+tags:
+  - secureshare.auto
+  - secureshare.indicator.domain
+  - {{credibility_tag}}

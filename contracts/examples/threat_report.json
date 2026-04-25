@@ -1,0 +1,18 @@
+{
+  "type": "phishing",
+  "indicators": [
+    {
+      "type": "domain",
+      "value": "esewa-verify-secure.xyz",
+      "first_seen": "2026-04-25T10:00:00Z"
+    },
+    {
+      "type": "ipv4",
+      "value": "203.0.113.42",
+      "first_seen": "2026-04-25T10:00:00Z"
+    }
+  ],
+  "severity": "high",
+  "description": "Spoofed eSewa login portal hosted at /v2/login, harvesting credentials and OTP. Fake page links to a Telegram bot.",
+  "mitre_tactic": "TA0001"
+}

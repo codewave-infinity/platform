@@ -1,0 +1,33 @@
+# SecureShare Sigma template — phishing email sender
+#
+# Triggered on an inbound message whose envelope-from or header-from matches
+# a reported phishing sender. Most useful for org-internal mail gateways.
+#
+# Placeholders:
+#   {{rule_id}}, {{indicator_value}}, {{severity}}, {{credibility_tag}},
+#   {{report_id}}, {{generated_date}}
+
+title: SecureShare Email-Sender Block — {{indicator_value}}
+id: {{rule_id}}
+status: experimental
+description: Auto-generated block for a phishing email sender address.
+references:
+  - secureshare://reports/{{report_id}}
+author: SecureShare auto-generator
+date: {{generated_date}}
+logsource:
+  category: email
+  product: mail_gateway
+detection:
+  selection_envelope:
+    smtp.mail_from: "{{indicator_value}}"
+  selection_header:
+    header.from: "{{indicator_value}}"
+  condition: 1 of selection_*
+falsepositives:
+  - Spoofed envelopes from legitimate senders being misclassified
+level: {{severity}}
+tags:
+  - secureshare.auto
+  - secureshare.indicator.email_sender
+  - {{credibility_tag}}

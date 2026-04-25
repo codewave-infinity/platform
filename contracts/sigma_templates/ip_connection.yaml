@@ -1,0 +1,33 @@
+# SecureShare Sigma template — outbound IPv4 connection
+#
+# Triggered when a host on the protected network establishes a connection to
+# a known-bad IP. Layer 2 of the gateway also feeds this template via JA4 hits.
+#
+# Placeholders:
+#   {{rule_id}}, {{indicator_value}}, {{severity}}, {{credibility_tag}},
+#   {{report_id}}, {{generated_date}}
+
+title: SecureShare IP Block — {{indicator_value}}
+id: {{rule_id}}
+status: experimental
+description: Auto-generated outbound block for a malicious IPv4 address.
+references:
+  - secureshare://reports/{{report_id}}
+author: SecureShare auto-generator
+date: {{generated_date}}
+logsource:
+  category: network_connection
+  product: firewall
+detection:
+  selection:
+    direction: outbound
+    dst_ip: "{{indicator_value}}"
+  condition: selection
+falsepositives:
+  - Shared hosting where the IP also fronts benign domains
+  - CDN edge nodes
+level: {{severity}}
+tags:
+  - secureshare.auto
+  - secureshare.indicator.ipv4
+  - {{credibility_tag}}
